@@ -4,7 +4,7 @@
 
 {% block content %}
 <h2> Проверьте почту и введите код </h2>
-<form method="post" action="{% url 'code_login' %}">
+<form method="post" action="{% url 'account:code_login' %}">
   {% csrf_token %}
   {{ message }}
   {{ form.as_p }}
