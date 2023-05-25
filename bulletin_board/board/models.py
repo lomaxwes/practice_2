@@ -23,3 +23,12 @@ class Post(models.Model):
     comment = RichTextField()
     category = models.CharField(max_length=100, choices=CATEGORY_CHOICES, )
     creation_time = models.DateTimeField(auto_now_add=True)
+
+
+class Response(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    comment = models.TextField()
+    creation_time = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=1, null=True, choices=[('Y', 'Принято'),
+                                                                ('N', 'Отклонено')])
