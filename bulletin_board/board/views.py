@@ -1,9 +1,11 @@
 from django.views import generic
-from django.shortcuts import HttpResponseRedirect, reverse
+from django.shortcuts import HttpResponseRedirect
+from django.urls import reverse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
+
 from .models import Post, User, Response
 from .forms import PostCreateForm, ResponseCreateForm
 
@@ -27,7 +29,7 @@ class PostCreate(LoginRequiredMixin, generic.CreateView):
 
     def form_valid(self, form):
         self.object = form.save(commit=False)
-        self.object.user = self.request.user
+        self.object.user = User.objects.get(id=self.request.user.id)
         self.object.save()
         result = super().form_valid(form)
         return result
@@ -36,13 +38,14 @@ class PostCreate(LoginRequiredMixin, generic.CreateView):
 class PostUpdate(LoginRequiredMixin, generic.UpdateView):
     model = Post
     form_class = PostCreateForm
-    template_name_suffix = '_edit'
 
     def get_template_names(self):
         post = self.get_object()
-        if post.user != self.request.user:
+        if post.user == self.request.user:
+            self.template_name = 'board/post_edit.html'
+            return self.template_name
+        else:
             raise PermissionDenied
-        return super().get_template_names()
 
 
 class ResponseList(LoginRequiredMixin, generic.ListView):
@@ -58,13 +61,14 @@ class ResponseList(LoginRequiredMixin, generic.ListView):
 
 class ResponseDetail(LoginRequiredMixin, generic.DetailView):
     model = Response
-    template_name_suffix = '_detail'
 
     def get_template_names(self):
         response = self.get_object()
-        if response.post.user != self.request.user:
+        if response.post.user == self.request.user:
+            self.template_name = 'board/response_detail.html'
+            return self.template_name
+        else:
             raise PermissionDenied
-        return super().get_template_names()
 
 
 class ResponseCreate(LoginRequiredMixin, generic.CreateView):
@@ -75,7 +79,7 @@ class ResponseCreate(LoginRequiredMixin, generic.CreateView):
 
     def form_valid(self, form):
         self.object = form.save(commit=False)
-        self.object.user = self.request.user
+        self.object.user = User.objects.get(id=self.request.user.id)
         self.object.post = Post.objects.get(id=self.kwargs['pk'])
         self.object.save()
         result = super().form_valid(form)
@@ -92,13 +96,13 @@ class SuccessView(LoginRequiredMixin, generic.TemplateView):
     template_name = 'board/success.html'
 
 
-@login_required
+@login_required()
 def accept_response(request, pk):
     response = Response.objects.get(pk=pk)
     response.status = 'Y'
     response.save()
     send_mail(
-        subject=f'Доска объявлений: отклик принят',
+        subject=f'Доска объявлений: отлик принят',
         message=f'Ваш отклик на пост "{response.post.title}" принят',
         from_email='aidigo.grigorjev@yandex.ru',
         recipient_list=[response.user.email]
@@ -106,10 +110,9 @@ def accept_response(request, pk):
     return HttpResponseRedirect(reverse('response_list'))
 
 
-@login_required
+@login_required()
 def deny_response(request, pk):
     response = Response.objects.get(pk=pk)
     response.status = 'N'
     response.save()
     return HttpResponseRedirect(reverse('response_list'))
-
