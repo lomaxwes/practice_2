@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from bulletin_board.account.models import OneTimeCode
+from .models import OneTimeCode
 
 # Register your models here.
 
